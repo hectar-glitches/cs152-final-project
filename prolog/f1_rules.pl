@@ -13,12 +13,11 @@
 % Consult drivers.pl for driver traits and derived helpers
 :- [drivers].
 
-:- dynamic current_track/1, current_forecast/1, current_driver/1.
-:- dynamic setup/3.  % setup(front_wing, rear_wing, RideHeightTier). fixed per run
-
+:- dynamic current_track/1, current_forecast/1.
+:- dynamic setup/3.  % setup(front_wing, rear_wing, RideHeightTier).
 % Tracks and regimes
 
-track(interlagos).
+current_track(interlagos).
 
 forecast_regime(stable).
 forecast_regime(unstable).
@@ -120,20 +119,17 @@ base_plank_wear_per_lap(med,  0.015).
 base_plank_wear_per_lap(high, 0.008).
 
 % Bumpiness multiplier
-bump_mult(low,  1.0).
-bump_mult(med,  1.0).
-bump_mult(high, 1.2).
 
-% Driver multipliers
-driver_plank_mult(conservative, 0.9).
-driver_plank_mult(balanced,     1.0).
-driver_plank_mult(aggressive,   1.1).
+bumpiness_mult(low,  1.0).
+bumpiness_mult(med,  1.0).
+bumpiness_mult(high, 1.2).
 
 % plank_wear_delta(+Track, +RideHeightTier, -DeltaPerLap)
+
 plank_wear_delta(Track, RH, Delta) :-
     base_plank_wear_per_lap(RH, Base),
     bumpiness(Track, B),
-    bump_mult(B, BMult),
+    bumpiness_mult(B, BMult),
     current_plank_mult(DMult),           % from drivers.pl
     Delta is Base * BMult * DMult.
 
@@ -143,31 +139,21 @@ update_plank_wear(W0, Delta, Laps, W1) :-
 
 % plank_status(+Wear, -Bucket)
 % Buckets are useful for RL state compression
-plank_status(W, safe)     :- plank_limit(L), W =< 0.6*L, !.
-plank_status(W, warn)     :- plank_limit(L), W =< 0.9*L, !.
-plank_status(W, critical) :- plank_limit(L), W =< L,     !.
-plank_status(W, illegal)  :- plank_limit(L), W >  L.
+plank_status(W, safe)     :- plank_limit(L), 
+                             W =< 0.6*L,
+                             !.
 
-% Driver characteristics (profiles)
+plank_status(W, warn)     :- plank_limit(L), 
+                             W =< 0.9*L, 
+                             !.
 
-driver_style(conservative).
-driver_style(balanced).
-driver_style(aggressive).
+plank_status(W, critical) :- plank_limit(L),
+                             W =< L,
+                             !.
 
-% Driver affects: pace bonus, tyre degradation multiplier, crash-risk multiplier
-driver_pace_bonus(conservative,  0.8).  % slower per lap (seconds)
-driver_pace_bonus(balanced,      0.0).
-driver_pace_bonus(aggressive,   -0.6).  % faster per lap (seconds)
+plank_status(W, illegal)  :- plank_limit(L),
+                             W >  L.
 
-driver_deg_mult(conservative, 0.9).
-driver_deg_mult(balanced,     1.0).
-driver_deg_mult(aggressive,   1.1).
-
-driver_risk_mult(conservative, 0.8).
-driver_risk_mult(balanced,     1.0).
-driver_risk_mult(aggressive,   1.2).
-
-% Performance model components (toy, tune later)
 
 % Base lap time depends on track (toy constant)
 base_lap_time(interlagos, 90.0).
@@ -322,7 +308,7 @@ used_two_dry(Used) :-
     N >= 2.
 
 % Opponent policy hook (optional; for training you can keep opponent fixed)
-% Choose a simple opponent action based on weather + age bucket.
+% Choose an opponent action based on weather + age bucket.
 % opponent_policy(+Weather, +OppTyre, +OppAgeBucket, -Action)
 % Action atoms expected by your env: stay | pit(tyre)
 
@@ -330,4 +316,3 @@ opponent_policy(wet, _Tyre, _AgeB, pit(inter)) :- !.
 opponent_policy(drizzle, Tyre, old,  pit(inter)) :- slick(Tyre), !.
 opponent_policy(dry, Tyre, old, pit(medium)) :- !.
 opponent_policy(_, _Tyre, _AgeB, stay).
-% End f1_rules.p
