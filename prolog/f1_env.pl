@@ -294,3 +294,7 @@ init_state(LapsLeft, Weather, MyTyre, OppTyre,
            state(LapsLeft, Weather,
                  my(MyTyre, 0, [MyTyre], 0.0, 0, 0.0),
                  opp(OppTyre, 0, [OppTyre], 0.0, 0, 0.0))).
+
+% to_pl(+Term, -String)
+to_pl(Term, String) :-
+    with_output_to(string(String), write_term(Term, [quoted(true)]) ).

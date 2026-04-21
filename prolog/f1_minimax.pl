@@ -82,6 +82,10 @@ min_pair(action_value(A1,V1), action_value(A2,V2), action_value(A1,V1)) :-
     !.
 min_pair(_X, Y, Y).
 
+% Allow querying minimax for either player at the root
+minimax_best(State, Depth, Player, Action, Value) :-
+    minimax(State, Depth, Player, Action, Value).
+
 % Convenience query for debugging:
 % prints each action and its minimax value at the root
 root_values(State, Depth, Player, Pairs) :-
