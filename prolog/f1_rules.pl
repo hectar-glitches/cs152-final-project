@@ -11,11 +11,18 @@
 % - Driver profile affects wear/risk multipliers
 
 % Consult drivers.pl for driver traits and derived helpers
-:- [drivers].
+:- ['f1_drivers.pl'].
 
 :- dynamic current_track/1, current_forecast/1.
 :- dynamic setup/3.  % setup(front_wing, rear_wing, RideHeightTier).
 % Tracks and regimes
+
+:- discontiguous current_track/1, forecast_regime/1, weather_state/1, transition_prob/5, setup/3, legal_setup/3.
+:- discontiguous plank_delta_player/3, lap_cost_player/9, set_weather/3.
+:- discontiguous used_two_dry/1, opponent_policy/4.
+:- discontiguous wet_bonus_term/3, ride_height_pace_adjust/2.
+:- discontiguous base_lap_time/2, downforce_level/3, drag_level/3, drag_penalty/2, wet_downforce_bonus/2.
+:- discontiguous age_bucket/2, deg_penalty/3, warmup_penalty/2, wrong_tyre_penalty/3, crash_risk_penalty_scaled/5. 
 
 current_track(interlagos).
 

@@ -21,7 +21,10 @@
 
 :- use_module(library(lists)).
 :- [f1_rules].
-:- [drivers].
+
+:- discontiguous apply_action/4, step_cost/4, legal_actions/3, step_reward/4, terminal/2, evaluate/2.
+:- discontiguous car_fields/6, rebuild_car/8, next_tyre_age_warm/7, update_used/3, pit_cost/2.
+:- discontiguous get_setup/3, plank_delta_player/3, lap_cost_player/9, set_weather/3, init_state/5.
 
 % Helpers: tyre sets
 all_tyre(soft).
@@ -69,9 +72,15 @@ apply_action(state(L, W, My0, Opp0), Player, Action,
 %  - MAX action increases MyTime => reward is negative
 %  - MIN action increases OppTime => reward is positive
 step_reward(State, Player, Action, Reward) :-
-    step_cost(State, Player, Action, Cost),
-    ( Player == max -> Reward is -Cost
-    ; Player == min -> Reward is  Cost ).
+    utility(State, U0),
+    apply_action(State, Player, Action, NextState),
+    utility(NextState, U1),
+    Reward is U1 - U0.
+
+utility(state(_L,_W,
+              my(_T1,_A1,_U1,_PW1,_WF1,TimeMy),
+              opp(_T2,_A2,_U2,_PW2,_WF2,TimeOpp)), U) :-
+    U is TimeOpp - TimeMy.
 
 % step_cost(+State, +Player, +Action, -Cost)
 % Computes one-step cost for the acting player:
@@ -92,6 +101,26 @@ step_cost(state(_L, W, My, Opp), Player, Action, Cost) :-
         lap_cost_player(min, W, Tyre1, Age1, Warm1, FW, RW, RH, LapCost),
         pit_cost(Action, PitCost),
         Cost is LapCost + PitCost
+    ).
+
+debug_one(State, Player, Action) :-
+    ( apply_action(State, Player, Action, NS) ->
+        writeln(applied=NS),
+        step_reward(State, Player, Action, R),
+        writeln(reward=R)
+    ; writeln('apply_action FAILED')
+    ).
+
+debug_action(State, Player, Action) :-
+    ( apply_action(State, Player, Action, NextState) ->
+        writeln('apply_action OK'),
+        writeln(next_state=NextState),
+        ( step_reward(State, Player, Action, R) ->
+            writeln('step_reward OK'),
+            writeln(reward=R)
+        ;   writeln('step_reward FAILED')
+        )
+    ; writeln('apply_action FAILED')
     ).
 
 % terminal(+State, -Value)
@@ -258,7 +287,6 @@ lap_cost_player(min, Weather, Tyre, Age, WarmFlag, FW, RW, RH, Cost) :-
 % set_weather(+State, +NewWeather, -NewState)
 set_weather(state(L, _W, My, Opp), NewW, state(L, NewW, My, Opp)).
 
-% Convenience: build an initial state quickly
 % init_state(+LapsLeft, +Weather, +MyTyre, +OppTyre, -State)
 % Used lists start with starting tyre; plank wear starts at 0.
 % Times start at 0.
