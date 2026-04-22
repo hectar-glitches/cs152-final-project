@@ -131,16 +131,18 @@ debug_action(State, Player, Action) :-
 % Value is from MAX perspective: OppTime - MyTime, with big DSQ penalties.
 terminal(state(_L, _W, my(_T1,_A1,_U1, PW1,_WF1,TimeMy),
                   opp(_T2,_A2,_U2, PW2,_WF2,TimeOpp)), Value) :-
+    number(PW1),
     plank_status(PW1, illegal),
-    % MAX DSQ => huge negative
     Value is -1000 - (TimeMy - TimeOpp),
     !.
+
 terminal(state(_L, _W, my(_T1,_A1,_U1, PW1,_WF1,TimeMy),
                   opp(_T2,_A2,_U2, PW2,_WF2,TimeOpp)), Value) :-
+    number(PW2),
     plank_status(PW2, illegal),
-    % MIN DSQ => huge positive
     Value is 1000 + (TimeOpp - TimeMy),
     !.
+
 terminal(state(L, W,
               my(_TyMy,_AgeMy,UsedMy,_PWMy,_WFMy,TimeMy),
               opp(_TyOp,_AgeOp,UsedOp,_PWOp,_WFOp,TimeOpp)), Value) :-
@@ -158,14 +160,14 @@ end_rule_penalty(W, UsedMy, UsedOp, Pen) :-
     ( W == wet ->
         Pen is 0
     ; % dry or drizzle
-      ( used_two_dry(UsedMy) -> PMy = 0 ; PMy = -500 ),
-      ( used_two_dry(UsedOp) -> POp = 0 ; POp = +500 ), % if opponent fails, helps MAX
+      ( used_two_dry(UsedMy) -> PMy = 0 ; PMy = -100 ),
+      ( used_two_dry(UsedOp) -> POp = 0 ; POp = +100 ), % if opponent fails, helps MAX
       Pen is PMy + POp
     ).
 
 % evaluate(+State, -Value)
 % Used by minimax at Depth=0 when not terminal.
-% Simple heuristic: current OppTime - MyTime (can add extra shaping if you want)
+% Simple heuristic: current OppTime - MyTime
 evaluate(state(_L, _W,
               my(_TyMy,_AgeMy,_UsedMy,_PWMy,_WFMy,TimeMy),
               opp(_TyOp,_AgeOp,_UsedOp,_PWOp,_WFOp,TimeOpp)), Value) :-
@@ -185,7 +187,9 @@ step_car(Player, Weather, Action,
 
     current_track(Track),
     get_setup(_FW,_RW,RH),
-    plank_delta_player(Player, Track, RH, Delta),
+    plank_delta_player(Player, Track, RH, Delta0),
+    plank_wear_mult(Tyre1, TM),
+    Delta is Delta0 * TM,
     update_plank_wear(PW0, Delta, 1, PW1),
 
     get_setup(FW, RW, RH2),
@@ -274,13 +278,10 @@ lap_cost_player(min, Weather, Tyre, Age, WarmFlag, FW, RW, RH, Cost) :-
 
     tyre_kind(Tyre, Kind),
     wrong_tyre_penalty(Weather, Kind, WrongPen),
-
     crash_risk_penalty_scaled(Weather, Tyre, DF, RiskMult, RiskPen),
-
     ( WarmFlag =:= 1 -> warmup_penalty(Tyre, WUP) ; WUP = 0.0 ),
 
     ride_height_pace_adjust(RH, RHAdj),
-
     Cost is Base + PaceAdj + DragPen + WetAdj + DegPen + WrongPen + RiskPen + WUP + RHAdj.
 
 % Convenience: update only weather from Python sampling

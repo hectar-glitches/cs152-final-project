@@ -93,6 +93,12 @@ class EnvBridge:
         if not sol:
             return ("none", 0.0)
         return (str(sol["A"]), float(sol["V"]))
+
+    def minimax_best_player(self, state: str, depth: int, player: str):
+        sol = self.q1(f"minimax_best_player({state},{depth},{player}, A, V).")
+        if not sol:
+            return ("none", 0.0)
+        return (str(sol["A"]), float(sol["V"]))
     
     def root_values(self, state: str, depth: int, player: str):
         """

@@ -86,6 +86,11 @@ min_pair(_X, Y, Y).
 minimax_best(State, Depth, Player, Action, Value) :-
     minimax(State, Depth, Player, Action, Value).
 
+% minimax_best_player(+State, +Depth, +Player, -Action, -Value)
+% Player is max or min
+minimax_best_player(State, Depth, Player, Action, Value) :-
+    minimax(State, Depth, Player, Action, Value).
+
 % Convenience query for debugging:
 % prints each action and its minimax value at the root
 root_values(State, Depth, Player, Pairs) :-

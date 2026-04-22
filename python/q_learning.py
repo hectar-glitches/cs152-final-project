@@ -1,6 +1,7 @@
 # python/q_learning.py
 import random
 from collections import defaultdict
+import pickle
 
 from env_bridge import make_bridge
 
@@ -17,14 +18,12 @@ def parse_state_key(state_str: str):
     Example state:
     state(5,drizzle,my(soft,0,[soft],0.0,0,0.0),opp(...))
 
-    We extract:
+    Extracts:
       laps_left,
       weather,
       my_tyre,
       my_age_bucket,
       my_plank_bucket
-
-    This is deliberately simple. You can add opponent tyre/age later.
     """
     # crude parsing via string splits (fast and good enough for this project)
     # state(L, W, my(Tyre, Age, Used, PW, Warm, Time), opp(...))
@@ -227,5 +226,9 @@ if __name__ == "__main__":
         opp_start_tyre="soft",
         regime="unstable",
     )
+
+    with open("python/q_table.pkl", "wb") as f:
+        pickle.dump(Q, f)
+    print("Saved Q to python/q_table.pkl")
 
     print("Learned Q entries:", len(Q))

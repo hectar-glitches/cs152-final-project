@@ -128,6 +128,13 @@ bumpiness_mult(low,  1.0).
 bumpiness_mult(med,  1.0).
 bumpiness_mult(high, 1.2).
 
+% Multiplier on plank wear based on tyre compound
+plank_wear_mult(soft,   1.15).
+plank_wear_mult(medium, 1.1).
+plank_wear_mult(hard,   1.05).
+plank_wear_mult(inter,  1.025).
+plank_wear_mult(wet,    1.0125).
+
 % plank_wear_delta(+Track, +RideHeightTier, -DeltaPerLap)
 plank_wear_delta(Track, RH, Delta) :-
     base_plank_wear_per_lap(RH, Base),
@@ -223,7 +230,7 @@ wrong_tyre_penalty(drizzle, slick,  2.5) :- !.  % gamble zone
 wrong_tyre_penalty(drizzle, inter,  0.8) :- !.
 wrong_tyre_penalty(drizzle, wet,    3.0) :- !.
 
-wrong_tyre_penalty(wet,     slick, 20.0) :- !.  % extremely bad, but not terminal
+wrong_tyre_penalty(wet,     slick, 20.0) :- !.  % bad, but not terminal
 wrong_tyre_penalty(wet,     inter,  1.0) :- !.
 wrong_tyre_penalty(wet,     wet,    0.0) :- !.
 % Crash risk

@@ -38,9 +38,9 @@ driver(nico).
 
 % Lando Norris
 % Fast, assertive when needed, but generally cleaner on tyres than outright "wild"
-aggression(lando, med).
+aggression(lando, low).
 smoothness(lando, med).
-kerb_use(lando, med).
+kerb_use(lando, low).
 risk_tolerance(lando, med).
 
 % Oscar Piastri
