@@ -62,7 +62,6 @@ def triggers_fire(state_key, prev_weather, prev_opp_action):
         opp_pitted: opponent pitted last lap
         mismatch_onset: tyre/weather mismatch became newly relevant this lap
     """
-    laps_left = state_key[0]
     curr_weather = state_key[1]
     my_tyre = state_key[2]
     my_age_bucket = state_key[3]

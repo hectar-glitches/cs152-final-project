@@ -23,9 +23,7 @@ class EnvBridge:
 
         self._ensure_to_pl()
 
-    # -------------------------
     # internal helpers
-    # -------------------------
     def _consult(self, file_path: Path):
         if not file_path.exists():
             raise FileNotFoundError(f"Missing Prolog file: {file_path}")
@@ -54,9 +52,7 @@ class EnvBridge:
         sols = list(self.prolog.query(query, maxresult=1))
         return sols[0] if sols else None
 
-    # -------------------------
     # KB configuration
-    # -------------------------
     def set_track(self, track: str) -> None:
         self.q1(f"retractall(current_track(_)), assertz(current_track({track})).")
 
@@ -68,9 +64,7 @@ class EnvBridge:
         self.q1("retractall(current_driver(_)).")
         self.q1(f"assertz(current_driver({driver})).")
 
-    # -------------------------
     # Environment predicates
-    # -------------------------
     def init_state(self, laps: int, weather: str, my_tyre: str, opp_tyre: str) -> str:
         sol = self.q1(f"init_state({laps},{weather},{my_tyre},{opp_tyre}, S), to_pl(S,SStr).")
         return self._as_str(sol["SStr"]) if sol else ""
@@ -135,9 +129,7 @@ class EnvBridge:
         )
         return self._as_str(sol["SStr"]) if sol else state_str
 
-    # -------------------------
     # Minimax helpers
-    # -------------------------
     def minimax_best_player(self, state_str: str, depth: int, player: str) -> tuple[str, float]:
         state_str = self._as_str(state_str)
         s_safe = self._escape_single_quotes(state_str)
@@ -163,9 +155,7 @@ class EnvBridge:
             return []
         return self._parse_action_value_pairs(self._as_str(sol["PStr"]))
 
-    # -------------------------
     # parsing helpers
-    # -------------------------
     def _parse_list_string(self, s: str) -> list[str]:
         s = s.strip()
         if not (s.startswith("[") and s.endswith("]")):
