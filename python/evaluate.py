@@ -1,4 +1,4 @@
-# python/evaluate_drivers.py
+# python/evaluate.py
 import pickle
 import statistics as stats
 
@@ -7,24 +7,21 @@ from run_race import run_one_race_hybrid
 
 def summarize(values):
     return {
-        "n": len(values),
         "mean": stats.mean(values),
-        "stdev": stats.pstdev(values) if len(values) > 1 else 0.0,
+        "stdev": stats.pstdev(values),
         "min": min(values),
         "max": max(values),
     }
 
 
 def main():
-    # Load Q once
     with open("python/q_table.pkl", "rb") as f:
         Q = pickle.load(f)
 
     drivers = ["max", "lewis", "lando", "charles", "george"]
 
-    # Fixed scenario
     scenario = dict(
-        laps=50,
+        laps=55,
         start_weather="drizzle",
         regime="unstable",
         depth=4,
@@ -33,7 +30,6 @@ def main():
     )
 
     runs_per_driver = 30
-
     print("Scenario:", scenario)
     print("Runs per driver:", runs_per_driver)
     print("")
@@ -47,21 +43,19 @@ def main():
         mm_overrides = []
 
         for i in range(runs_per_driver):
-            # seed changes each run so weather differs, but reproducible
             seed = 1000 + i
-
             result = run_one_race_hybrid(
                 Q=Q,
                 driver=d,
                 seed=seed,
                 verbose=False,
-                **scenario
+                **scenario,
             )
 
-            utilities.append(result["terminal_value"])
+            u = result["terminal_value"]
+            utilities.append(u)
 
-            # DSQ detection (your terminal assigns around +/-1000)
-            if result["terminal_value"] is not None and abs(result["terminal_value"]) >= 900:
+            if u is not None and abs(u) >= 900:
                 dsq += 1
 
             pits_max.append(result.get("pits_max", 0))
@@ -69,15 +63,14 @@ def main():
             mm_consults.append(result.get("mm_consults", 0))
             mm_overrides.append(result.get("mm_overrides", 0))
 
-        u = summarize(utilities)
-
-        print("Driver:", d)
-        print("Utility: mean={:.2f} stdev={:.2f} min={:.2f} max={:.2f}".format(u["mean"], u["stdev"], u["min"], u["max"]))
-        print("DSQ rate: {}/{} = {:.1f}%".format(dsq, runs_per_driver, 100.0 * dsq / runs_per_driver))
-        print("Avg pits (MAX): {:.2f}".format(stats.mean(pits_max)))
-        print("Avg pits (MIN): {:.2f}".format(stats.mean(pits_min)))
-        print("Avg minimax-consults per race: {:.2f}".format(stats.mean(mm_consults)))
-        print("Avg minimax-overrides per race: {:.2f}".format(stats.mean(mm_overrides)))
+        s = summarize(utilities)
+        print(f"Driver: {d}")
+        print(f"Utility: mean={s['mean']:.2f} stdev={s['stdev']:.2f} min={s['min']:.2f} max={s['max']:.2f}")
+        print(f"DSQ rate: {dsq}/{runs_per_driver} = {100.0*dsq/runs_per_driver:.1f}%")
+        print(f"Avg pits (MAX): {stats.mean(pits_max):.2f}")
+        print(f"Avg pits (MIN): {stats.mean(pits_min):.2f}")
+        print(f"Avg minimax-consults per race: {stats.mean(mm_consults):.2f}")
+        print(f"Avg minimax-overrides per race: {stats.mean(mm_overrides):.2f}")
         print("")
 
 

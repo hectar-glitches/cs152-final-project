@@ -207,7 +207,6 @@ car_fields(opp(T,A,U,PW,Wf,Time), T,A,U,PW,Wf,Time).
 rebuild_car(my(_,_,_,_,_,_),  T,A,U,PW,Wf,Time, my(T,A,U,PW,Wf,Time)).
 rebuild_car(opp(_,_,_,_,_,_), T,A,U,PW,Wf,Time, opp(T,A,U,PW,Wf,Time)).
 
-
 % In State we store my(...) and opp(...), but in step_car we store car(...)
 % That’s just an internal convenience.
 
@@ -216,9 +215,20 @@ car_to_opp(car(T,A,U,PW,Wf,Time), opp(T,A,U,PW,Wf,Time)).
 my_to_car(my(T,A,U,PW,Wf,Time), car(T,A,U,PW,Wf,Time)).
 opp_to_car(opp(T,A,U,PW,Wf,Time), car(T,A,U,PW,Wf,Time)).
 
+% Map smoothness level to age increment per step
+age_step_from_smoothness(high, 1).
+age_step_from_smoothness(med,  1).
+age_step_from_smoothness(low,  2).
+
+
 % next_tyre_age_warm(Action, Tyre0, Age0, Warm0, Tyre1, Age1, Warm1)
 next_tyre_age_warm(stay, Tyre, Age0, _Warm0, Tyre, Age1, 0) :-
-    Age1 is Age0 + 1.
+    current_driver(D),
+    smoothness(D, Smooth),
+    age_step_from_smoothness(Smooth, Step),
+    Age1 is Age0 + Step,
+    !.
+
 next_tyre_age_warm(pit(NewTyre), _Tyre0, _Age0, _Warm0, NewTyre, 0, 1).
 
 % update_used(Action, Used0, Used1)
@@ -237,6 +247,7 @@ pit_cost(pit(_), Cost) :-
 %   setup(FW, RW, RH).
 get_setup(FW, RW, RH) :-
     setup(FW, RW, RH), !.
+
 get_setup(3, 3, med).  % default if not set
 
 % plank_delta_player(Player, Track, RH, Delta)
