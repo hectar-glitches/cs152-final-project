@@ -19,6 +19,17 @@ def run_one_race_hybrid(
     seed=42,
     verbose=True,
 ):
+    """
+    Run one simulated race using the hybrid policy for MAX:
+    - MAX uses Q-learning by default, consults minimax only when triggers fire
+    - MIN always responds using minimax (as an adversarial opponent)
+    - Weather evolves once per lap via a Markov transition model
+
+    Key detail for weather_transition trigger:
+    - prev_weather stores the weather at the START of the previous lap
+    - curr_weather is the weather at the START of the current lap
+    - weather_transition fires when curr_weather != prev_weather
+    """
     random.seed(seed)
 
     B = make_bridge()
@@ -34,8 +45,8 @@ def run_one_race_hybrid(
     # stats counters
     pits_max = 0
     pits_min = 0
-    mm_used = 0
-    overrides = 0
+    mm_consults = 0
+    mm_overrides = 0
     trig_counts = {"pit_window": 0, "weather_transition": 0, "dsq_risk": 0}
 
     while True:
@@ -49,23 +60,28 @@ def run_one_race_hybrid(
                 "final_state": S,
                 "pits_max": pits_max,
                 "pits_min": pits_min,
-                "mm_used": mm_used,
-                "overrides": overrides,
+                "mm_consults": mm_consults,
+                "mm_overrides": mm_overrides,
                 "trigger_counts": trig_counts,
                 "steps": step,
             }
 
+        # Weather at START of this lap
+        curr_weather = parse_state_key(S)[1]
+
         # MAX (hybrid)
         action, info = choose_action_hybrid(B, Q, S, prev_weather, depth=depth, margin=5.0)
 
-        # stats: triggers + minimax usage
+        # triggers + minimax consult/override counts
         for k, fired in info["trigger"].items():
             if fired:
                 trig_counts[k] += 1
-        if info["used"] == "minimax":
-            mm_used += 1
+
+        if info.get("consulted_minimax", False):
+            mm_consults += 1
         if info.get("override", False):
-            overrides += 1
+            mm_overrides += 1
+
         if action.startswith("pit("):
             pits_max += 1
 
@@ -86,16 +102,18 @@ def run_one_race_hybrid(
 
         S = B.apply_action(S, "min", opp_action)
 
-        # weather update again
+        # Markov weather transition ONCE per lap (after both players move)
         w_now = parse_state_key(S)[1]
         w_next = sample_weather_next(B, track, regime, w_now)
         S = B.set_weather(S, w_next)
+
         if verbose:
             print(f"    Weather: {w_next}")
 
         step += 1
 
-        prev_weather = w_next
+        # IMPORTANT: store weather from the START of this lap
+        prev_weather = curr_weather
 
 
 if __name__ == "__main__":

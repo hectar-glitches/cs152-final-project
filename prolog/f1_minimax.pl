@@ -72,12 +72,12 @@ choose_best(max, [H|T], Best) :-
 choose_best(min, [H|T], Best) :-
     foldl(min_pair, T, H, Best).
 
-max_pair(action_value(A1,V1), action_value(A2,V2), action_value(A1,V1)) :-
+max_pair(action_value(A1,V1), action_value(_A2,V2), action_value(A1,V1)) :-
     V1 >= V2,
     !.
 max_pair(_X, Y, Y).
 
-min_pair(action_value(A1,V1), action_value(A2,V2), action_value(A1,V1)) :-
+min_pair(action_value(A1,V1), action_value(_A2,V2), action_value(A1,V1)) :-
     V1 =< V2,
     !.
 min_pair(_X, Y, Y).

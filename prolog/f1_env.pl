@@ -1,4 +1,3 @@
-% prolog/f1_env.pl
 % Environment interface used by:
 %  - Q-learning (Python via PySWIP)
 %  - Minimax (Prolog)
@@ -19,6 +18,7 @@
 %   - If MAX acts: reward = -my_step_cost
 %   - If MIN acts: reward = +opp_step_cost
 
+:- style_check(-singleton).
 :- use_module(library(lists)).
 :- [f1_rules].
 

@@ -20,11 +20,11 @@ def main():
     with open("python/q_table.pkl", "rb") as f:
         Q = pickle.load(f)
 
-    drivers = ["max", "lewis", "lando"]
+    drivers = ["max", "lewis", "lando", "charles", "george"]
 
     # Fixed scenario
     scenario = dict(
-        laps=30,
+        laps=50,
         start_weather="drizzle",
         regime="unstable",
         depth=4,
@@ -43,8 +43,8 @@ def main():
         dsq = 0
         pits_max = []
         pits_min = []
-        mm_used = []
-        overrides = []
+        mm_consults = []
+        mm_overrides = []
 
         for i in range(runs_per_driver):
             # seed changes each run so weather differs, but reproducible
@@ -66,8 +66,8 @@ def main():
 
             pits_max.append(result.get("pits_max", 0))
             pits_min.append(result.get("pits_min", 0))
-            mm_used.append(result.get("mm_used", 0))
-            overrides.append(result.get("overrides", 0))
+            mm_consults.append(result.get("mm_consults", 0))
+            mm_overrides.append(result.get("mm_overrides", 0))
 
         u = summarize(utilities)
 
@@ -76,8 +76,8 @@ def main():
         print("DSQ rate: {}/{} = {:.1f}%".format(dsq, runs_per_driver, 100.0 * dsq / runs_per_driver))
         print("Avg pits (MAX): {:.2f}".format(stats.mean(pits_max)))
         print("Avg pits (MIN): {:.2f}".format(stats.mean(pits_min)))
-        print("Avg minimax-used per race: {:.2f}".format(stats.mean(mm_used)))
-        print("Avg minimax-overrides per race: {:.2f}".format(stats.mean(overrides)))
+        print("Avg minimax-consults per race: {:.2f}".format(stats.mean(mm_consults)))
+        print("Avg minimax-overrides per race: {:.2f}".format(stats.mean(mm_overrides)))
         print("")
 
 
