@@ -1,26 +1,27 @@
 % prolog/drivers.pl
 
+:- discontiguous aggression/2.
+:- discontiguous smoothness/2.
+:- discontiguous kerb_use/2.
+:- discontiguous risk_tolerance/2.
+
 :- dynamic current_driver/1.
-:- dynamic driver/1.
 
 % Pick the active driver for a run (Python can retract/assert this too)
 current_driver(max).
-
-% Driver facts
-driver(max).
 
 % Traits (discrete, explainable)
 % aggression: affects pace bonus and (optionally) crash risk
 aggression(max, high).        % low | med | high
 
 % smoothness: affects tyre degradation
-smoothness(high, med, low).         % low | med | high (low = harsher on tyres)
+smoothness(max, med).         % low | med | high (low = harsher on tyres)
 
 % kerb use: affects plank wear rate
-kerb_use(high, med, low).          % low | med | high (high = more aggressive kerb use, more plank wear)
+kerb_use(max, high).          % low | med | high (high = more aggressive kerb use, more plank wear)
 
 % risk tolerance: affects crash-risk penalty scaling / willingness to gamble
-risk_tolerance(high, med, low).    % low | med | high
+risk_tolerance(max, high).    % low | med | high
 
 % Other driver profiles.
 % Additional driver facts
@@ -37,9 +38,9 @@ driver(nico).
 
 % Lando Norris
 % Fast, assertive when needed, but generally cleaner on tyres than outright "wild"
-aggression(lando, med).
+aggression(lando, low).
 smoothness(lando, med).
-kerb_use(lando, med).
+kerb_use(lando, low).
 risk_tolerance(lando, med).
 
 % Oscar Piastri
