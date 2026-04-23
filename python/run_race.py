@@ -143,8 +143,7 @@ def run_one_race_hybrid(
         if verbose:
             print("STATE (start lap):", S)
             print(f"[{step}] MAX action={action} used={info.get('used')} trigger={info.get('trigger')}")
-            # uncomment if you want noisy debugging:
-            # print("LEGAL MAX:", legal_max)
+
 
         S1 = B.apply_action(S, "max", action)
         if S1 is None:
@@ -177,8 +176,6 @@ def run_one_race_hybrid(
 
         if verbose:
             print(f"[{step}] MIN action={opp_action}")
-            # uncomment if you want noisy debugging:
-            # print("LEGAL MIN:", legal_min)
 
         S2 = B.apply_action(S1, "min", opp_action)
         if S2 is None:

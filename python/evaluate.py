@@ -1,4 +1,6 @@
 # python/evaluate.py
+"""Evaluate hybrid race policy performance across drivers and seeds."""
+
 import pickle
 import statistics as stats
 
@@ -6,6 +8,18 @@ from run_race import run_one_race_hybrid
 
 
 def summarize(values):
+    """Compute basic summary statistics for numeric values.
+
+    Args:
+        values: Iterable of numeric values.
+
+    Returns:
+        A dictionary containing:
+            - mean: Arithmetic mean.
+            - stdev: Population standard deviation.
+            - min: Minimum value.
+            - max: Maximum value.
+    """
     return {
         "mean": stats.mean(values),
         "stdev": stats.pstdev(values),
@@ -15,6 +29,12 @@ def summarize(values):
 
 
 def main():
+    """Run repeated race evaluations and print per-driver aggregate metrics.
+
+    This function loads a Q-table from disk, defines a fixed scenario, runs
+    multiple seeded simulations for each driver, and prints utility, DSQ rate,
+    pit-stop averages, and minimax consultation/override averages.
+    """
     with open("python/q_table.pkl", "rb") as f:
         Q = pickle.load(f)
 

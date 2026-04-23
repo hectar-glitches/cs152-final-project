@@ -5,7 +5,7 @@
 :- dynamic current_driver/1.
 :- dynamic driver/1, aggression/2, smoothness/2, kerb_use/2, risk_tolerance/2.
 
-% Suppress "not together in source-file" warnings (you can also reorder facts instead)
+% Suppress warnings 
 :- discontiguous driver/1.
 :- discontiguous aggression/2.
 :- discontiguous smoothness/2.
@@ -25,31 +25,31 @@ kerb_use(max, high).
 risk_tolerance(max, high).
 
 driver(lewis).
-aggression(lewis, med).
+aggression(lewis, low).
 smoothness(lewis, high).
 kerb_use(lewis, low).
-risk_tolerance(lewis, med).
+risk_tolerance(lewis, low).
 
 driver(lando).
 aggression(lando, med).
-smoothness(lando, med).
-kerb_use(lando, med).
+smoothness(lando, high).
+kerb_use(lando, low).
 risk_tolerance(lando, med).
 
 driver(charles).
 aggression(charles, high).
-smoothness(charles, med).
+smoothness(charles, low).
 kerb_use(charles, med).
 risk_tolerance(charles, high).
 
 driver(george).
 aggression(george, med).
-smoothness(george, med).
-kerb_use(george, med).
+smoothness(george, low).
+kerb_use(george, high).
 risk_tolerance(george, med).
 
 
-% Trait -> effect tables
+% Trait to effect tables
 
 
 % Pace bonus (seconds per lap): negative means faster
@@ -58,7 +58,6 @@ pace_bonus(med,  0.0).
 pace_bonus(high, -0.6).
 
 % Base tyre degradation multiplier from smoothness (higher = more deg)
-% (You can tune these)
 smoothness_mult(high, 1.05).
 smoothness_mult(med,  1.35).
 smoothness_mult(low,  1.75).

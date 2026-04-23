@@ -13,7 +13,7 @@
 :- use_module(library(lists)).
 :- [f1_env].   % f1_env loads f1_rules and drivers
 
-:- discontiguous minimax/5, minimax_best/4, choose_best/3, max_pair/3, min_pair/3, root_values/4.
+:- discontiguous minimax/5, minimax_best/4, choose_best/3, max_pair/3, min_pair/3, root_values/4, minimax_best_player/5.
 
 other_player(max, min).
 other_player(min, max).
@@ -80,7 +80,112 @@ max_pair(_X, Y, Y).
 min_pair(action_value(A1,V1), action_value(_A2,V2), action_value(A1,V1)) :-
     V1 =< V2,
     !.
+min_pair(_X, Y, Y).% filepath: /Users/hectar/Downloads/cs152-final-project/prolog/f1_minimax.pl
+% Minimax search for F1 strategy:
+%   MAX = you
+%   MIN = opponent
+%
+% Uses environment predicates from f1_env.pl:
+%   legal_actions(State, Player, Actions)
+%   apply_action(State, Player, Action, NextState)
+%   step_reward(State, Player, Action, Reward)   % from MAX perspective
+%   terminal(State, Value)                       % final utility from MAX perspective
+%   evaluate(State, Value)                       % heuristic utility if depth hits 0
+
+
+% other_player(+Player, -OtherPlayer)
+other_player(max, min).
+other_player(min, max).
+
+% minimax_best(+State, +Depth, -BestAction, -BestValue)
+% Entry point: computes best action for MAX player using minimax search.
+minimax_best(State, Depth, BestAction, BestValue) :-
+    minimax(State, Depth, max, BestAction, BestValue).
+
+% minimax(+State, +Depth, +Player, -Action, -Value)
+% Core minimax recursion: returns best action and value for player.
+
+% Base case: terminal state
+minimax(State, _Depth, _Player, none, Value) :-
+    terminal(State, Value),
+    !.
+
+% Base case: depth limit reached, use heuristic
+minimax(State, 0, _Player, none, Value) :-
+    evaluate(State, Value),
+    !.
+
+% Base case: no legal actions available, evaluate
+minimax(State, _Depth, Player, none, Value) :-
+    legal_actions(State, Player, Actions),
+    Actions == [],
+    evaluate(State, Value),
+    !.
+
+% Recursive case: generate action-value pairs and pick best
+minimax(State, Depth, Player, BestAction, BestValue) :-
+    Depth > 0,
+    legal_actions(State, Player, Actions),
+    Actions \= [],
+    NextDepth is Depth - 1,
+
+    % Evaluate each action: Value = ImmediateReward + DiscountedFutureValue
+    findall(action_value(Action, Value),
+        (
+            member(Action, Actions),
+            apply_action(State, Player, Action, NextState),
+            step_reward(State, Player, Action, R),
+            other_player(Player, NextPlayer),
+            minimax(NextState, NextDepth, NextPlayer, _A2, V2),
+            Value is R + V2
+        ),
+        Pairs),
+
+    choose_best(Player, Pairs, action_value(BestAction, BestValue)),
+    !.
+
+% choose_best(+Player, +ActionValuePairs, -BestPair)
+% Selects best action-value pair: MAX maximizes, MIN minimizes.
+choose_best(max, [H|T], Best) :-
+    foldl(max_pair, T, H, Best).
+
+choose_best(min, [H|T], Best) :-
+    foldl(min_pair, T, H, Best).
+
+% max_pair(+CandidatePair, +BestSoFar, -NewBest)
+% Comparator for MAX: keeps pair with higher value.
+max_pair(action_value(A1,V1), action_value(_A2,V2), action_value(A1,V1)) :-
+    V1 >= V2,
+    !.
+max_pair(_X, Y, Y).
+
+% min_pair(+CandidatePair, +BestSoFar, -NewBest)
+% Comparator for MIN: keeps pair with lower value.
+min_pair(action_value(A1,V1), action_value(_A2,V2), action_value(A1,V1)) :-
+    V1 =< V2,
+    !.
 min_pair(_X, Y, Y).
+
+% minimax_best_player(+State, +Depth, +Player, -Action, -Value)
+% Wrapper: computes minimax best action for given player (max or min).
+minimax_best_player(State, Depth, Player, Action, Value) :-
+    minimax(State, Depth, Player, Action, Value).
+
+% root_values(+State, +Depth, +Player, -ActionValuePairs)
+% Debugging utility: returns all root actions and their minimax values.
+root_values(State, Depth, Player, Pairs) :-
+    legal_actions(State, Player, Actions),
+    NextDepth is Depth - 1,
+    findall(action_value(Action, Value),
+        (
+            member(Action, Actions),
+            apply_action(State, Player, Action, NextState),
+            step_reward(State, Player, Action, R),
+            other_player(Player, NextPlayer),
+            minimax(NextState, NextDepth, NextPlayer, _A2, V2),
+            Value is R + V2
+        ),
+        Pairs).
 
 % Allow querying minimax for either player at the root
 minimax_best(State, Depth, Player, Action, Value) :-

@@ -7,7 +7,16 @@ from env_bridge import make_bridge
 
 
 def split_top_level_commas(s: str):
-    """Split by commas, ignoring commas inside (...) or [...]"""
+    """Split a string on top-level commas only.
+
+    Commas inside parentheses `(...)` or brackets `[...]` are ignored.
+
+    Args:
+        s: Input string containing comma-separated terms.
+
+    Returns:
+        A list of top-level comma-separated segments, stripped of whitespace.
+    """
     out = []
     depth_paren = 0
     depth_brack = 0
@@ -32,6 +41,14 @@ def split_top_level_commas(s: str):
 
 
 def age_bucket(age: int) -> str:
+    """Map tyre age to a coarse categorical bucket.
+
+    Args:
+        age: Tyre age in laps.
+
+    Returns:
+        One of `"fresh"`, `"ok"`, or `"old"`.
+    """
     if age == 0:
         return "fresh"
     if 1 <= age <= 8:
@@ -40,6 +57,14 @@ def age_bucket(age: int) -> str:
 
 
 def plank_bucket(pw: float) -> str:
+    """Map plank wear to a coarse categorical bucket.
+
+    Args:
+        pw: Plank wear ratio/value.
+
+    Returns:
+        One of `"safe"`, `"warn"`, `"critical"`, or `"illegal"`.
+    """
     if pw <= 0.6:
         return "safe"
     if pw <= 0.9:
@@ -50,18 +75,18 @@ def plank_bucket(pw: float) -> str:
 
 
 def parse_state_key(state_str: str):
-    """
-    Produce a compact, hashable Q-learning state key from the Prolog state string.
+    """Create a compact, hashable Q-learning key from a Prolog state string.
 
-    Arguments:
-      state_str: Prolog term as a string:
-        "state(L,Weather,my(...),opp(...))"
+    Expected input format:
+        `state(L,Weather,my(...),opp(...))`
+
+    Args:
+        state_str: Serialized Prolog state term.
 
     Returns:
-      tuple:
-        (laps_left, weather,
-         my_tyre, my_age_bucket, my_plank_bucket,
-         opp_tyre, opp_age_bucket)
+        A tuple:
+            `(laps_left, weather, my_tyre, my_age_bucket, my_plank_bucket,
+            opp_tyre, opp_age_bucket)`.
     """
     inside = state_str[len("state("):-1]
     parts = split_top_level_commas(inside)
@@ -94,8 +119,16 @@ def parse_state_key(state_str: str):
 
 
 def sample_weather_next(B, track: str, regime: str, w: str) -> str:
-    """
-    Sample next weather state from Prolog transition_prob/5.
+    """Sample the next weather state from Prolog transition probabilities.
+
+    Args:
+        B: Environment bridge instance used for Prolog queries.
+        track: Track identifier (Prolog atom string).
+        regime: Weather regime identifier.
+        w: Current weather identifier.
+
+    Returns:
+        A sampled next-weather identifier.
     """
     q = f"findall(p(NW,P), transition_prob({track},{regime},{w},NW,P), L)."
     sol = B.q1(q)
@@ -114,6 +147,17 @@ def sample_weather_next(B, track: str, regime: str, w: str) -> str:
 
 
 def epsilon_greedy_action(Q, state_key, actions, eps: float):
+    """Select an action using an epsilon-greedy policy.
+
+    Args:
+        Q: Q-table mapping `(state_key, action)` to scalar value.
+        state_key: Current encoded state key.
+        actions: List of legal action strings.
+        eps: Exploration probability in `[0, 1]`.
+
+    Returns:
+        Selected action string. Returns `"stay"` if `actions` is empty.
+    """
     if not actions:
         return "stay"
     if random.random() < eps:
@@ -142,16 +186,30 @@ def train_q_learning(
     setup=(3, 3, "med"),
     driver="max",
 ):
-    """
-    Vanilla Q-learning for MAX with a fixed opponent (stationary) and Markov weather.
+    """Train a vanilla Q-learning policy for MAX in the race environment.
 
-    Timing convention (matches run_race):
-      - MAX acts
-      - MIN acts (default = stay)
-      - weather transitions ONCE per full lap
+    Training assumes:
+      - MAX acts first.
+      - MIN uses a fixed stationary action (`"stay"`).
+      - Weather transitions once per full lap (after MAX and MIN actions).
+
+    Args:
+        episodes: Number of training episodes.
+        alpha: Learning rate.
+        gamma: Discount factor.
+        epsilon: Exploration probability for epsilon-greedy action selection.
+        laps: Initial lap count for each episode.
+        start_weather: Initial weather condition.
+        my_start_tyre: Initial MAX tyre compound.
+        opp_start_tyre: Initial MIN tyre compound.
+        regime: Weather regime used by transition probabilities.
+        track: Track identifier.
+        setup: Car setup tuple `(front_wing, rear_wing, ride_height)`.
+        driver: Driver identifier used by Prolog environment setup.
 
     Returns:
-      Q: defaultdict(float) mapping (state_key, action_str) -> q_value
+        A `defaultdict(float)` Q-table mapping `(state_key, action_str)` to
+        learned Q-values.
     """
     B = make_bridge()
     B.set_track(track)
