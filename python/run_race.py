@@ -114,9 +114,7 @@ def run_one_race_hybrid(
         # Weather at START of lap (used for transition trigger)
         curr_weather = parse_state_key(S)[1]
 
-        # ----------------
         # MAX (hybrid)
-        # ----------------
         action_raw, info = choose_action_hybrid(
             B=B,
             Q=Q,
@@ -169,9 +167,7 @@ def run_one_race_hybrid(
                 "steps": step,
             }
 
-        # ----------------
         # MIN (minimax)
-        # ----------------
         opp_action_raw, _ = B.minimax_best_player(S1, depth, "min")
         legal_min = B.legal_actions(S1, "min")
         opp_action = sanitize_action(opp_action_raw, legal_min)
@@ -188,9 +184,7 @@ def run_one_race_hybrid(
         if S2 is None:
             S2 = B.apply_action(S1, "min", "stay")
 
-        # -----------------------------------
         # Weather transition ONCE per full lap
-        # -----------------------------------
         w_now = parse_state_key(S2)[1]
         w_next = sample_weather_next(B, track, regime, w_now)
         S3 = B.set_weather(S2, w_next)
