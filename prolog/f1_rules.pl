@@ -14,15 +14,19 @@
 current_track(interlagos).
 current_forecast(unstable).
 
+% track(+Track)
 track(interlagos).
 
+% forecast_regime(+Regime)
 forecast_regime(stable).
 forecast_regime(unstable).
 
+% weather_state(+Weather)
 weather_state(dry).
 weather_state(drizzle).
 weather_state(wet).
 
+% transition_prob(+Track, +Regime, +CurrentWeather, +NextWeather, -Probability)
 % Markov transitions (example values)
 transition_prob(interlagos, stable,   dry,     dry,     0.85).
 transition_prob(interlagos, stable,   dry,     drizzle, 0.15).
@@ -48,32 +52,50 @@ transition_prob(interlagos, unstable, wet,     dry,     0.05).
 transition_prob(interlagos, unstable, wet,     drizzle, 0.40).
 transition_prob(interlagos, unstable, wet,     wet,     0.55).
 
-% Tyres
+% dry_tyre(+Tyre)
 dry_tyre(soft).
 dry_tyre(medium).
 dry_tyre(hard).
 
+% wet_tyre(+Tyre)
 wet_tyre(inter).
 wet_tyre(wet).
 
+% slick(+Tyre)
 slick(T) :- dry_tyre(T).
 
+% tyre_kind(+Tyre, -Kind)
 tyre_kind(T, slick) :- slick(T), !.
 tyre_kind(inter, inter) :- !.
 tyre_kind(wet, wet).
 
-% Setup legality
+% front_wing_level(+Level)
 front_wing_level(1). front_wing_level(2). front_wing_level(3). front_wing_level(4). front_wing_level(5).
+
+% rear_wing_level(+Level)
 rear_wing_level(1).  rear_wing_level(2).  rear_wing_level(3).  rear_wing_level(4).  rear_wing_level(5).
+
+% ride_height_tier(+Tier)
 ride_height_tier(low). ride_height_tier(med). ride_height_tier(high).
 
-front_wing_legal_min(1). front_wing_legal_max(5).
-rear_wing_legal_min(1).  rear_wing_legal_max(5).
+% front_wing_legal_min(-Min)
+front_wing_legal_min(1).
 
+% front_wing_legal_max(-Max)
+front_wing_legal_max(5).
+
+% rear_wing_legal_min(-Min)
+rear_wing_legal_min(1).
+
+% rear_wing_legal_max(-Max)
+rear_wing_legal_max(5).
+
+% ride_height_legal(+RideHeight)
 ride_height_legal(low).
 ride_height_legal(med).
 ride_height_legal(high).
 
+% legal_setup(+FrontWing, +RearWing, +RideHeight)
 legal_setup(FW, RW, RH) :-
     front_wing_level(FW),
     rear_wing_level(RW),
@@ -84,24 +106,28 @@ legal_setup(FW, RW, RH) :-
     RW >= RMin, RW =< RMax,
     ride_height_legal(RH).
 
+% setup(+FrontWing, +RearWing, +RideHeight)
 % Default setup if Python doesn't set it
 setup(3,3,med).
 
-% Plank wear model
+% plank_limit(-LimitValue)
 plank_limit(1.0).
 
+% bumpiness(+Track, -BumpinessLevel)
 bumpiness(interlagos, med).
 
+% base_plank_wear_per_lap(+RideHeight, -DeltaPerLap)
 base_plank_wear_per_lap(low,  0.030).
 base_plank_wear_per_lap(med,  0.015).
 base_plank_wear_per_lap(high, 0.008).
 
+% bumpiness_mult(+Level, -Multiplier)
 bumpiness_mult(low,  1.0).
 bumpiness_mult(med,  1.0).
 bumpiness_mult(high, 1.2).
 
-% Tyre compound multiplier for plank wear.
-% Intuition: softer tyres leads to more grip leads to more down force leads to slightly more plank wear.
+% plank_wear_mult(+Tyre, -Multiplier)
+% Softer tyres lead to more grip and slightly more plank wear.
 plank_wear_mult(soft,   1.15).
 plank_wear_mult(medium, 1.10).
 plank_wear_mult(hard,   1.05).
@@ -109,7 +135,7 @@ plank_wear_mult(inter,  1.02).
 plank_wear_mult(wet,    1.01).
 
 % plank_wear_delta(+Track, +RideHeightTier, -DeltaPerLap)
-% considers kerb_use and aggression.
+% Considers kerb_use and aggression via current_* helpers.
 plank_wear_delta(Track, RH, Delta) :-
     base_plank_wear_per_lap(RH, Base),
     bumpiness(Track, B),
@@ -118,47 +144,55 @@ plank_wear_delta(Track, RH, Delta) :-
     current_aggr_plank_mult(AggMult),
     Delta is Base * BMult * KerbMult * AggMult.
 
+% update_plank_wear(+CurrentWear, +DeltaPerLap, +Laps, -NewWear)
 update_plank_wear(W0, Delta, Laps, W1) :-
     W1 is W0 + Delta * Laps.
 
+% plank_status(+WearValue, -Status)
 plank_status(W, safe)     :- plank_limit(L), W =< 0.6*L, !.
 plank_status(W, warn)     :- plank_limit(L), W =< 0.9*L, !.
 plank_status(W, critical) :- plank_limit(L), W =< L,     !.
 plank_status(W, illegal)  :- plank_limit(L), W >  L.
 
-% Lap time components
+% base_lap_time(+Track, -BaseSeconds)
 base_lap_time(interlagos, 90.0).
 
+% downforce_level(+FrontWing, +RearWing, -Level)
 downforce_level(FW, RW, low) :- FW + RW =< 4, !.
 downforce_level(FW, RW, med) :- FW + RW =< 7, !.
 downforce_level(_FW,_RW, high).
 
+% drag_level(+FrontWing, +RearWing, -Level)
 drag_level(FW, RW, low) :- FW + RW =< 4, !.
 drag_level(FW, RW, med) :- FW + RW =< 7, !.
 drag_level(_FW,_RW, high).
 
+% drag_penalty(+DragLevel, -PenaltySeconds)
 drag_penalty(low,  0.0).
 drag_penalty(med,  0.4).
 drag_penalty(high, 0.9).
 
+% wet_downforce_bonus(+DownforceLevel, -BonusSeconds)
 wet_downforce_bonus(low,  1.2).
 wet_downforce_bonus(med,  0.6).
 wet_downforce_bonus(high, 0.0).
 
+% wet_bonus_term(+Weather, +Downforce, -Adjustment)
 wet_bonus_term(dry, _DF, 0.0) :- !.
 wet_bonus_term(drizzle, DF, Adj) :- wet_downforce_bonus(DF, Adj), !.
 wet_bonus_term(wet, DF, Adj) :- wet_downforce_bonus(DF, Adj).
 
+% ride_height_pace_adjust(+RideHeight, -PaceAdjust)
 ride_height_pace_adjust(low,  -0.3).
 ride_height_pace_adjust(med,   0.0).
 ride_height_pace_adjust(high,  0.4).
 
-% Tyre age bucket
+% age_bucket(+Age, -AgeBucket)
 age_bucket(0, fresh).
 age_bucket(A, ok)   :- A >= 1, A =< 8, !.
 age_bucket(A, old)  :- A >= 9.
 
-% Deg penalty base table
+% deg_penalty(+Tyre, +AgeBucket, -DegradationPenalty)
 deg_penalty(soft,   fresh, 0.2).
 deg_penalty(soft,   ok,    0.9).
 deg_penalty(soft,   old,   2.2).
@@ -179,14 +213,15 @@ deg_penalty(wet,    fresh, 0.3).
 deg_penalty(wet,    ok,    0.7).
 deg_penalty(wet,    old,   1.6).
 
-% Warmup
+% warmup_penalty(+Tyre, -PenaltySeconds)
 warmup_penalty(soft,   0.6).
 warmup_penalty(medium, 0.8).
 warmup_penalty(hard,   1.1).
 warmup_penalty(inter,  0.9).
 warmup_penalty(wet,    1.0).
 
-% Tyre-weather mismatch (fitness)
+% wrong_tyre_penalty(+Weather, +TyreKind, -PenaltySeconds)
+% Tyre-weather mismatch (fitness) penalty.
 wrong_tyre_penalty(dry, slick,   0.0) :- !.
 wrong_tyre_penalty(dry, inter,   2.0) :- !.
 wrong_tyre_penalty(dry, wet,     5.0) :- !.
@@ -199,7 +234,8 @@ wrong_tyre_penalty(wet, slick,   20.0) :- !.
 wrong_tyre_penalty(wet, inter,    1.0) :- !.
 wrong_tyre_penalty(wet, wet,      0.0) :- !.
 
-% Crash-risk penalty scaled by risk tolerance
+% crash_risk_penalty_scaled(+Weather, +Tyre, +Downforce, +RiskMultiplier, -PenaltySeconds)
+% Applies crash-risk penalty scaled by driver risk tolerance.
 crash_risk_penalty_scaled(dry, _Tyre, _DF, _RiskMult, 0.0) :- !.
 crash_risk_penalty_scaled(drizzle, Tyre, DF, RiskMult, Pen) :-
     tyre_kind(Tyre, Kind),
@@ -210,29 +246,33 @@ crash_risk_penalty_scaled(wet, Tyre, DF, RiskMult, Pen) :-
     base_risk_wet(Kind, DF, Base),
     Pen is Base * RiskMult.
 
+% base_risk_drizzle(+TyreKind, +Downforce, -BaseRisk)
 base_risk_drizzle(slick, low,  6.0).
 base_risk_drizzle(slick, med,  4.0).
 base_risk_drizzle(slick, high, 2.5).
 base_risk_drizzle(inter, _DF,  1.0).
 base_risk_drizzle(wet,   _DF,  1.2).
 
+% base_risk_wet(+TyreKind, +Downforce, -BaseRisk)
 base_risk_wet(slick, low,  25.0).
 base_risk_wet(slick, med,  18.0).
 base_risk_wet(slick, high, 12.0).
 base_risk_wet(inter, _DF,   2.0).
 base_risk_wet(wet,   _DF,   0.8).
 
-% OPTIONAL: extra degradation when low grip (drizzle/wet), scaled by risk tolerance
+% low_grip_weather(+Weather)
+% OPTIONAL: extra degradation when low grip (drizzle/wet), scaled by risk tolerance.
 % This makes "riskier" drivers cook tyres more when conditions are sketchy.
 low_grip_weather(drizzle).
 low_grip_weather(wet).
 
+% weather_deg_factor(+Weather, -DegradationFactor)
 weather_deg_factor(Weather, F) :-
     ( low_grip_weather(Weather) -> current_risk_deg_mult(F)
     ; F = 1.0 ).
 
-% Lap cost
-% lap_cost(+Track,+Weather,+Tyre,+Age,+WarmupFlag,+FW,+RW,+RH,-Cost)
+% lap_cost(+Track, +Weather, +Tyre, +Age, +WarmupFlag, +FrontWing, +RearWing, +RideHeight, -Cost)
+% Computes total lap time cost combining all factors: pace, drag, wet bonus, deg, risk, warmup.
 lap_cost(Track, Weather, Tyre, Age, WarmupFlag, FW, RW, RH, Cost) :-
     base_lap_time(Track, Base),
 
@@ -267,17 +307,19 @@ lap_cost(Track, Weather, Tyre, Age, WarmupFlag, FW, RW, RH, Cost) :-
 
     Cost is Base + PaceAdj + DragPen + WetAdj + DegPen + WrongPen + RiskPen + WUP + RHAdj.
 
-% Pit loss
+% pit_loss(+Track, -PitStopSeconds)
 pit_loss(interlagos, 20.0).
 
-% Two-dry-compounds rule helper
+% used_two_dry(+UsedList)
+% Checks if at least two distinct dry compound tyres have been used.
 used_two_dry(Used) :-
     findall(T, (member(T, Used), dry_tyre(T)), DryUsed),
     sort(DryUsed, Unique),
     length(Unique, N),
     N >= 2.
 
-% Simple opponent policy hook (optional)
+% opponent_policy(+Weather, +Tyre, +AgeBucket, -RecommendedAction)
+% Simple opponent policy hook (can be used for fixed opponent behavior).
 opponent_policy(wet, _Tyre, _AgeB, pit(inter)) :- !.
 opponent_policy(drizzle, Tyre, old, pit(inter)) :- slick(Tyre), !.
 opponent_policy(dry, _Tyre, old, pit(medium)) :- !.

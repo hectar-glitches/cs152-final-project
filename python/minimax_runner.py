@@ -3,9 +3,16 @@ from env_bridge import make_bridge
 
 
 def sample_weather_next(B, track: str, regime: str, w: str) -> str:
-    """
-    Sample next weather using Prolog transition_prob/5.
-    We parse results as strings like "p(dry,0.85)".
+    """Sample the next weather state from Prolog transition probabilities.
+
+    Args:
+        B: Environment bridge instance used to query Prolog.
+        track: Track identifier (Prolog atom as string).
+        regime: Weather regime identifier.
+        w: Current weather identifier.
+
+    Returns:
+        A sampled next-weather identifier.
     """
     sol = B.q1(f"findall(p(NW,P), transition_prob({track},{regime},{w},NW,P), L).")
     L = sol["L"]
@@ -36,9 +43,32 @@ def run_one_race(
     seed: int | None = None,
     verbose: bool = True,
 ):
-    """
-    Both players use minimax at depth=4.
-    Weather is sampled in Python between moves (chance handled by simulator, not minimax).
+    """Simulate one race where both players choose actions via minimax.
+
+    Weather transitions are sampled in Python between plies using Prolog
+    transition probabilities.
+
+    Args:
+        laps: Number of race laps for the initial state.
+        start_weather: Initial weather condition.
+        regime: Weather regime used by transition probabilities.
+        depth: Minimax search depth.
+        my_start_tyre: Starting tyre for MAX player.
+        opp_start_tyre: Starting tyre for MIN player.
+        setup: Car setup tuple `(front_wing, rear_wing, ride_height)`.
+        driver: Driver identifier used by the Prolog environment.
+        track: Track identifier.
+        sample_weather_each_ply: Whether to sample/apply weather after each move.
+        seed: Optional RNG seed for reproducible sampling.
+        verbose: Whether to print step-by-step logs.
+
+    Returns:
+        A dictionary with race summary fields:
+            - terminal_value: Final utility, or `None` on safety break.
+            - final_state: Serialized final state string.
+            - pits_max: Number of pit stops by MAX.
+            - pits_min: Number of pit stops by MIN.
+            - steps: Number of completed turn-pairs (or final step count).
     """
     if seed is not None:
         random.seed(seed)

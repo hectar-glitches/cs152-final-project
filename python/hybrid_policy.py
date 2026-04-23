@@ -87,8 +87,7 @@ def triggers_fire(state_key, prev_weather, prev_opp_action):
     opp_pitted = bool(prev_opp_action) and prev_opp_action.startswith("pit(")
 
     # 5) Tyre/weather mismatch onset:
-    # Fire only if mismatch is TRUE now AND weather just worsened,
-    # so it doesn't spam every lap you remain mismatched.
+    # Fire only if mismatch is TRUE now AND weather just worsened, to avoid firing repeatedly in a long mismatch period.
     is_slick = my_tyre in ("soft", "medium", "hard")
     mismatch_now = is_slick and (curr_weather in ("drizzle", "wet"))
     mismatch_onset = mismatch_now and weather_transition
